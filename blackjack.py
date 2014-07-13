@@ -6,7 +6,7 @@ from __future__ import print_function
 import random
 
 
-class BlackJack:
+class BlackJack(object):
 
     def __init__(self, wager=1, max_wager=1, dealer_min=17, allow_soft_limit=True, allow_split=True, allow_double_down=True, level=0):
         """Returns None.  Initiailizes the Game with rules, wager limits and draws the initial set of two cards for player and dealer"""
