@@ -112,7 +112,7 @@ if __name__ == '__main__':
     player = _initialize_game(wager_credits)
     print('Welcome to BlackJack')
     print('*' * 20)
-    print('You can play as many rounds as you want and as long as you have atleast 1 wager credit left to play.  You can wager more.')
+    print('You can play as many rounds as you want as long as you have atleast 1 wager credit left to play.')
     play = 'Y'
     # Play until the player says N or until he runs out of credits
     while play != 'N' and player['chips'] > 0:
