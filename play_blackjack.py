@@ -69,7 +69,7 @@ def get_player_input(allow_double_down=True):
             print('Hit (1): Draw one more card to see if you get closer to 21, but not higher.')
             print('Stand (2): Compare your current hand value with Dealer hand value to see if you scored higher, but still 21 or below.')
             if allow_double_down:
-                print('Double Down (3): ')
+                print('Double Down (3): Double down your wager bets.  You will draw one more card and a Stand will be issued for the hand.')
     return int(choice)
 
 

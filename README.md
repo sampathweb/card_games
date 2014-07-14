@@ -1,20 +1,18 @@
-Card Games:
-==========
-This package acts as the container for card games in Python.  Currently you can play BlackJack.  More to come later.
-
 BlackJack:
 =========
 The Objective of the game is to get to 21 or close to it without exceeding 21.  You are playing solely against the dealer or also called the House.
 
 How to Run:
 ----------
-If you have python installed, you can run by typing:
+If you have python installed, you can run from command line as:
 
 `python play_blackjack.py`
-By default, you are given 100 wager credits.
-or
 
-`python play_blackjack.py 200`  to give yourself more wager credits.  The credits needs to be numeric.  If you give a invalid input, you will be given the default 100 wager credit.
+By default, you are given 100 wager credits.  If you want more credits, run the program with credits you need.  For example:
+
+`python play_blackjack.py 200`  will give you 200 credits.
+
+The credits needs to be numeric.  If you give a invalid input, you will be given the default 100 wager credit.
 
 To Run Tests and verify that it passes the pre-determined test conditions, just run:
 
@@ -48,8 +46,8 @@ Game Settings:
 While initailizing the game via BlackJack class, you will be able to:
 
 * Set Wager, Maximum Wager.  By default both are 1.
-* Specify if Splits and Doubledowns are allowed.  By Default Split and Doubledowns are allowed.
-* Specify if Doubledown after a Split is allowed.  By Default, it is allowed.
+* Specify if Splits and Doubledowns are allowed.  By default Split and Doubledowns are allowed.
+* Specify if Doubledown after a Split is allowed.  By default, it is allowed.
 * Specify Doubledown maximums.  By default it's 21, but you can specify something less to favor the House.
-* Specify if Dealer minimum.  By Default it's 17.
-* Specify if the dealer limit is soft.  By Default, it's not.
+* Specify if Dealer minimum.  By default it's 17.
+* Specify if the dealer limit is soft.  By default, it's not.

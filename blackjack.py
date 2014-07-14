@@ -7,6 +7,7 @@ import random
 
 
 class BlackJack(object):
+    """Contains all the logic to Play BlackJack"""
 
     def __init__(self, wager=1, max_wager=1, dealer_min=17, allow_soft_limit=True, allow_split=True, allow_dd=True, allow_dd_after_split=True):
         """Returns None.  Initiailizes the Game with rules, wager limits and draws the initial set of two cards for player and dealer"""
@@ -36,6 +37,7 @@ class BlackJack(object):
         return None
 
     def _init_player(self, wager, allow_dd):
+        """Initializes Player Hand"""
         player = {
             'hand': [],
             'wager': wager,
@@ -54,6 +56,9 @@ class BlackJack(object):
         return self.card_deck.pop()
 
     def _get_hand_value(self, hand, allow_soft_limit=True):
+        """Returns hand value.
+        If allow_soft_limit is set, Ace is calculated with 1 or 11, which ever is favorable to reach 21
+        """
         hand_values = [0]
         for face, suit in hand:
             card_value = self._face_value(face)
@@ -126,6 +131,9 @@ class BlackJack(object):
             return False
 
     def hit(self, hand_idx=0):
+        """Picks a card at random for the player hand.
+        Dealer picks card until the minimum is reached.  At that point, dealer stops.
+        """
         player = self.players[hand_idx]
         if player['active']:
             player['hand'].append(self._pick_card())
@@ -140,12 +148,17 @@ class BlackJack(object):
             self.allow_split = False
 
     def player_hand_value(self, hand_idx=0):
+        """Returns Player Hand Value"""
         return self._get_hand_value(self.players[hand_idx]['hand'])
 
     def dealer_hand_value(self):
+        """Returns Dealer Hand Value"""
         return self._get_hand_value(self.dealer_hand, allow_soft_limit=self.allow_soft_limit)
 
     def stand(self, hand_idx=0):
+        """Returns None.  Computes the Game Result and Wager Earned.
+        Game for the hand is over once a Stand is called.
+        """
         dealer_value = self.dealer_hand_value()
         # Dealer has to hit until it's atleast Dealer Min (Default 17)
         while dealer_value < self.dealer_min:
