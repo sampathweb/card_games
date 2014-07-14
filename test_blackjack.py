@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-Test code for blackjack game.  Tests can be run with py.test or nosetests.
+Test code for blackjack game.  Test can be run from command line: python test_blackjack.py
+
+Due to the randomness of the cards drawn, many of the runs try multiple times to hit the test condition and avoid 'BlackJack'.
 """
 from __future__ import print_function
 import unittest
@@ -10,132 +12,208 @@ from blackjack import BlackJack
 class TestRule(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.run_max = 100000  # Max attempts for each test
+        self.test_ran = False
 
     def tearDown(self):
-        pass
+        self.assertTrue(self.test_ran)  # Verify that test ran
 
     def test_init(self):
-        mygame = BlackJack()
-        self.assertEqual(len(mygame.player_hands[0]), 2)  # Initial hand for Player
-        self.assertEqual(len(mygame.dealer_hand), 2)  # Initial hand for Dealer
+        mygame = BlackJack()  # Default Initialization
+        self.assertEqual(len(mygame.players), 1)  # Assert only one player playing before split
+        self.assertEqual(len(mygame.players[0]['hand']), 2)  # Initial hand for Player
+        self.test_ran = True
 
-    def test_player_hit(self):
-        mygame = BlackJack()
-        mygame.hit()
-        self.assertEqual(len(mygame.player_hands[0]), 3)  # Three cards in Player's hand
+    def test_hit(self):
+        for run in range(self.run_max):
+            mygame = BlackJack()
+            if not mygame.verify_blackjack():  # Not a BlackJack
+                mygame.hit()
+                self.assertEqual(len(mygame.players[0]['hand']), 3)  # Three cards in Player's hand
+                self.test_ran = True
+                break
 
-    def test_player_split(self):
-        mygame = BlackJack(wager=1, max_wager=2)
-        mygame.split()
-        self.assertEqual(len(mygame.player_hands), 2)  # Two Hands Played by Player
+    def test_split(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=1, max_wager=2)
+            if mygame.player_hand_value() != 21:
+                mygame.split()
+                self.assertEqual(len(mygame.players), 2)  # Two Hands Played by Player
+                self.assertEqual(len(mygame.players[0]['hand']), 2)
+                self.assertEqual(len(mygame.players[1]['hand']), 2)
+                self.test_ran = True
+                break
 
-    def test_player_split_not_enough_wager(self):
-        mygame = BlackJack(wager=1, max_wager=1)
-        mygame.split()
-        self.assertEqual(len(mygame.player_hands), 1)  # Only Hand Played. Since not enough wager
-        self.assertEqual(len(mygame.player_hands[0]), 2)
+    def test_split_not_allowed_blackjack(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=1, max_wager=2)
+            if mygame.verify_blackjack():
+                # Split should not be possible when blackjack
+                self.assertFalse(mygame.split())
+                self.assertEqual(len(mygame.players), 1)
+                self.assertIn(mygame.players[0]['result'], ['blackjack', 'push'])
+                self.test_ran = True
+                break
 
-    def test_player_split_not_allowed(self):
-        mygame = BlackJack(wager=1, max_wager=100, allow_split=False)
-        mygame.split()
-        self.assertEqual(len(mygame.player_hands), 1)  # Only Hand Played. Since split not allowed
-        self.assertEqual(len(mygame.player_hands[0]), 2)
+    def test_split_not_allowed(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=1, max_wager=100, allow_split=False)
+            if not mygame.verify_blackjack():  # Not a BlackJack
+                mygame.split()
+                self.assertEqual(len(mygame.players), 1)  # Only Hand Played. Since split not allowed
+                self.assertEqual(len(mygame.players[0]['hand']), 2)
+                self.test_ran = True
+                break
 
-    def test_player_double_down(self):
-        mygame = BlackJack(wager=5, max_wager=100)  # Double down allowed by default
-        mygame.double_down()
-        self.assertEqual(mygame.wager, 10)  # Double down Succeeded
-        # Now, bust to verify that double down of wager is good
-        for cnt in range(15):  # Draw 15 cards - Sure to loose
-            mygame.hit()
-        mygame.stand()
-        self.assertEqual(mygame.wager_earned, -10)  # Lost the double down wager
+    def test_split_not_enough_wager(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=1, max_wager=1)
+            if not mygame.verify_blackjack():  # Not a BlackJack
+                mygame.split()
+                self.assertEqual(len(mygame.players), 1)  # Only Hand Played. Since not enough wager
+                self.assertEqual(len(mygame.players[0]['hand']), 2)
+                self.test_ran = True
+                break
 
-    def test_player_double_down_split(self):
-        mygame = BlackJack(wager=5, max_wager=100)  # Double down & Split allowed by default
-        mygame.double_down()
-        self.assertEqual(mygame.wager, 10)  # Double down Succeeded
-        mygame.split()
-        # Now, bust to verify that double down then Split worked
-        for cnt in range(15):  # Draw 15 cards - Sure to loose
-            mygame.hit()
-        mygame.stand()
-        self.assertEqual(mygame.wager_earned, -20)  # Lost the double down / Split wager
+    def test_double_down(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=5, max_wager=100)  # Double down allowed by default
+            if mygame.player_hand_value() != 21:
+                mygame.double_down()
+                self.assertEqual(mygame.players[0]['wager'], 10)  # Double down Succeeded
+                self.assertFalse(mygame.players[0]['active'])  # Assert that game is not active
+                self.test_ran = True
+                break
 
-    def test_player_split_double_down(self):
-        mygame = BlackJack(wager=5, max_wager=100)  # Double down & Split allowed by default
-        mygame.split()
-        self.assertEqual(len(mygame.player_hands), 2)  # Split Succeeded
-        mygame.double_down()
-        self.assertEqual(mygame.wager, 10)  # Double down Succeeded
-        # Now, bust to verify that Split then double down worked
-        for cnt in range(15):  # Draw 15 cards - Sure to loose
-            mygame.hit()
-        mygame.stand()
-        self.assertEqual(mygame.wager_earned, -20)  # Lost the double down / Split wager
+    def test_double_down_not_allowed_blackjack(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=5, max_wager=100)  # Double down allowed by default
+            if mygame.player_hand_value() == 21:
+                # Doubledown should not be possible when blackjack
+                self.assertFalse(mygame.double_down())
+                self.assertEqual(len(mygame.players), 1)
+                self.assertIn(mygame.players[0]['result'], ['blackjack', 'push'])
+                self.test_ran = True
+                break
 
-    def test_player_double_down_not_allowed(self):
-        mygame = BlackJack(wager=5, max_wager=100, allow_double_down=False)
-        mygame.double_down()
-        self.assertEqual(mygame.wager, 5)  # Did not double down
-        # Now, bust to verify that double down did not reduce wager twice
-        for cnt in range(15):  # Draw 15 cards - Sure to loose
-            mygame.hit()
-        mygame.stand()
-        self.assertEqual(mygame.wager_earned, -5)  # Original wager lost, not double down
+    def test_double_down_not_allowed(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=5, max_wager=100, allow_dd=False)
+            if mygame.player_hand_value() != 21:
+                mygame.double_down()
+                self.assertEqual(mygame.players[0]['wager'], 5)  # Did not double down
+                self.test_ran = True
+                break
 
-    def test_player_double_down_not_enough_wager(self):
-        mygame = BlackJack(wager=5, max_wager=9, allow_double_down=True)
-        mygame.double_down()
-        self.assertEqual(mygame.wager, 5)  # Did not double down
-        # Now, bust to verify that double down did not reduce wager twice
-        for cnt in range(15):  # Draw 15 cards - Sure to loose
-            mygame.hit()
-        mygame.stand()
-        self.assertEqual(mygame.wager_earned, -5)  # Original wager lost, not double down
+    def test_double_down_not_enough_wager(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=5, max_wager=9, allow_dd=True)
+            if mygame.player_hand_value() != 21:
+                mygame.double_down()
+                self.assertEqual(mygame.players[0]['wager'], 9)  # Double Down to Max Value
+                self.test_ran = True
+                break
+
+    def test_double_down_after_split(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=5, max_wager=100)  # Double down & Split allowed by default
+            if mygame.player_hand_value() != 21:
+                mygame.split()
+                # Double down one hand
+                mygame.double_down(hand_idx=0)
+                self.assertEqual(mygame.players[0]['wager'], 10)
+                self.assertEqual(mygame.players[1]['wager'], 5)
+                self.test_ran = True
+                break
+
+    def test_player_blackjack1(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=10, max_wager=12)
+            player = mygame.players[0]
+            if mygame.player_hand_value() == 21 and mygame.dealer_hand_value() != 21:
+                self.assertEqual(player['result'], 'blackjack')
+                self.assertEqual(mygame.wager_earned, 1.5 * player['wager'])
+                self.test_ran = True
+                break
+
+    def test_player_blackjack2(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=10, max_wager=12)
+            player = mygame.players[0]
+            if mygame.player_hand_value() == 21 and mygame.dealer_hand_value() == 21 and len(mygame.dealer_hand) > 2:
+                self.assertEqual(player['result'], 'blackjack')
+                self.assertEqual(mygame.wager_earned, 1.5 * player['wager'])
+                self.test_ran = True
+                break
 
     def test_player_bust(self):
-        mygame = BlackJack(wager=10, max_wager=12)
-        for cnt in range(10):  # Draw 10 cards - Sure to loose
-            mygame.hit()
-        self.assertEqual(len(mygame.player_hands[0]), 12)  # Twelve cards in Player's hand
-        mygame.stand()  # Stand to verify that you got busted when you pull 12 cards
-        self.assertEqual(mygame.game_result[0], 'bust')  # Definitely a bust
-        self.assertEqual(mygame.wager_earned, -10)  # Lost the wager
-
-    def test_player_win(self):
-        for cnt in range(100):  # Try 100 Times
+        for run in range(self.run_max):
             mygame = BlackJack(wager=10, max_wager=12)
-            while mygame.player_hands_value()[0] < 12:
-                mygame.hit()
-            mygame.stand()
-            if (mygame.player_hands_value()[0] <= 21 and mygame.player_hands_value()[0] > mygame.dealer_hand_value()) or \
-                    (mygame.player_hands_value()[0] > 21 and mygame.player_hands_value()[0] < mygame.dealer_hand_value()):
-                self.assertEqual(mygame.game_result[0], 'won')
-                self.assertEqual(mygame.wager_earned, mygame.wager)
+            if not mygame.verify_blackjack():  # Not a BlackJack
+                for cnt in range(10):  # Draw 10 cards - Sure to loose
+                    mygame.hit()
+                mygame.stand()  # Stand to verify that you got busted when you pull 12 cards
+                if mygame.dealer_hand_value() <= 21:
+                    self.assertEqual(mygame.players[0]['result'], 'bust')  # Definitely a bust
+                    self.assertEqual(mygame.wager_earned, -10)  # bust
+                    self.test_ran = True
+                    break
+
+    def test_player_and_dealer_bust(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=10, max_wager=12)
+            if not mygame.verify_blackjack():  # Not a BlackJack
+                for cnt in range(10):  # Draw 10 cards - Sure to loose
+                    mygame.hit(hand_idx=0)
+                mygame.stand()  # Stand to verify that you got busted when you pull 12 cards
+                if mygame.dealer_hand_value() > 21:
+                    self.assertEqual(mygame.players[0]['result'], 'push')  # Both bust, so a Push
+                    self.assertEqual(mygame.wager_earned, 0)  # Both bust
+                    self.test_ran = True
+                    break
 
     def test_player_push(self):
-        for cnt in range(100):  # Try 100 Times because cards are drawn at random and favorable cards may not occur all times
+        for run in range(self.run_max):
             mygame = BlackJack(wager=10, max_wager=12)
-            while mygame.player_hands_value()[0] < 12:
+            if not mygame.verify_blackjack():  # Not a BlackJack
+                while mygame.player_hand_value() < 12 and mygame.players[0]['active']:
+                    mygame.hit()
+                mygame.stand()
+                if mygame.player_hand_value() == mygame.dealer_hand_value():
+                    self.assertEqual(mygame.players[0]['result'], 'push')
+                    self.assertEqual(mygame.wager_earned, 0)
+                    self.test_ran = True
+                    break
+
+    def test_player_won(self):
+        for run in range(self.run_max):
+            mygame = BlackJack(wager=10, max_wager=12)
+            while mygame.player_hand_value() < 12 and mygame.players[0]['active']:
                 mygame.hit()
             mygame.stand()
-            if mygame.player_hands_value()[0] == mygame.dealer_hand_value():
-                self.assertEqual(mygame.game_result[0], 'push')
-                self.assertEqual(mygame.wager_earned, 0)
+            player_hand_value = mygame.player_hand_value(hand_idx=0)
+            # When player hand is < 21, but > Dealer hand and it's not blackjack, player wins
+            if player_hand_value <= 21 and \
+                    player_hand_value > mygame.dealer_hand_value() and \
+                    len(mygame.players[0]['hand']) > 2:
+                self.assertEqual(mygame.players[0]['result'], 'won')
+                self.assertEqual(mygame.wager_earned, mygame.players[0]['wager'])
+                self.test_ran = True
+                break
 
     def test_player_lost(self):
-        for cnt in range(100):  # Try 100 Times because cards are drawn at random and favorable cards may not occur all times
+        for run in range(self.run_max):
             mygame = BlackJack(wager=10, max_wager=12)
-            while mygame.player_hands_value()[0] < 12:
+            while mygame.player_hand_value() < 12 and mygame.players[0]['active']:
                 mygame.hit()
             mygame.stand()
-            if mygame.player_hands_value()[0] <= 21 and \
+            if mygame.player_hand_value() <= 21 and \
                     mygame.dealer_hand_value() <= 21 and \
-                    mygame.player_hands_value()[0] < mygame.dealer_hand_value():
-                self.assertEqual(mygame.game_result[0], 'lost')
-                self.assertEqual(mygame.wager_earned, -1 * mygame.wager)
+                    mygame.player_hand_value() < mygame.dealer_hand_value():
+                self.assertEqual(mygame.players[0]['result'], 'lost')
+                self.assertEqual(mygame.wager_earned, -1 * mygame.players[0]['wager'])
+                self.test_ran = True
+                break
 
 if __name__ == '__main__':
     unittest.main()
